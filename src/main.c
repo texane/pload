@@ -6,7 +6,9 @@
 #define DAC_USE_VREF
 #include "dac.c"
 
+#ifdef DAC_USE_VREF
 #include "vref.c"
+#endif /* DAC_USE_VREF */
 
 
 extern void delay(uint32_t);
@@ -14,54 +16,70 @@ extern void delay(uint32_t);
 
 /* main */
 
+static uint32_t ma_to_dac(uint32_t ma)
+{
+  /* ma the milliamps */
+
+  /* do the full computation here to avoid truncatures */
+
+  /* we have */
+  /* mv = ma * rsense = ma * 0.05 = ma / 20 */
+  /* and */
+  /* dac_value = mv * 4096 / DAC_VREF_MV */
+  /* thus */
+  /* dac_value = (ma * 4096) / (DAC_VREF_MV * 20) */
+
+  return (ma * 4096) / (DAC_VREF_MV * 20);
+}
+
 int main(void)
 {
+#ifdef DAC_USE_VREF
   vref_setup();
+#endif /* DAC_USE_VREF */
+
   dac_setup();
+  dac_enable();
 
   serial_setup();
   SERIAL_WRITE_STRING("starting\r\n");
 
-  dac_enable();
-
   while (1)
   {
-    SERIAL_WRITE_STRING("alive\r\n");
-
-    /* warning: must be le 0xfff */
-#if 0
-    dac_set(4096 / 1 - 1);
-    delay(500);
-    dac_set(4096 / 2);
-    delay(500);
-    dac_set(4096 / 4);
-    delay(500);
-    dac_set(4096 / 8);
-    delay(500);
-    dac_set(4096 / 16);
-    delay(500);
-    dac_set(4096 / 32);
-    delay(500);
-    dac_set(4096 / 64);
-    delay(500);
-#endif
-
-    dac_set(dac_mv_to_val(0));
+    SERIAL_WRITE_STRING("0\r\n");
+    dac_set(ma_to_dac(0));
     delay(5000);
 
-    dac_set(dac_mv_to_val(10));
+    SERIAL_WRITE_STRING("10\r\n");
+    serial_write(uint32_to_string(ma_to_dac(10)), 8);
+    SERIAL_WRITE_STRING("\r\n");
+    dac_set(ma_to_dac(10));
     delay(5000);
 
-    dac_set(dac_mv_to_val(50));
+    SERIAL_WRITE_STRING("50\r\n");
+    serial_write(uint32_to_string(ma_to_dac(50)), 8);
+    SERIAL_WRITE_STRING("\r\n");
+    dac_set(ma_to_dac(50));
     delay(5000);
 
-    dac_set(dac_mv_to_val(100));
+    SERIAL_WRITE_STRING("100\r\n");
+    dac_set(ma_to_dac(100));
     delay(5000);
 
-    dac_set(dac_mv_to_val(150));
+    SERIAL_WRITE_STRING("200\r\n");
+    dac_set(ma_to_dac(200));
     delay(5000);
 
-    dac_set(dac_mv_to_val(1000));
+    SERIAL_WRITE_STRING("500\r\n");
+    dac_set(ma_to_dac(500));
+    delay(5000);
+
+    SERIAL_WRITE_STRING("750\r\n");
+    dac_set(ma_to_dac(750));
+    delay(5000);
+
+    SERIAL_WRITE_STRING("1000\r\n");
+    dac_set(ma_to_dac(1000));
     delay(5000);
   }
 
