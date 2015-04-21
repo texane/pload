@@ -1,0 +1,99 @@
+[ TITLE: hacking the reload:2 active load ]
+
+
+[ Introduction ]
+
+With another colleague, we are currently developping an electronic
+board at work that will eventually be powered over ethernet. to gain
+more experience with this technology, we made a power supply stage.
+[ TODO: schematics ]
+
+We want to test this stage with different load profiles to simulate
+the final board under different circumstances. I remembered seeing
+the reload2, a low cost active load sold on hackaday:
+http://www.arachnidlabs.com/reload-2/index.html
+http://store.hackaday.com/products/re-load-2
+
+Everything is provided, including heatsink and connectors. For 20$,
+this is very attractive so it was the occasion for me to give it a try.
+
+The schematics are simple:
+[ TODO: schematics ]
+
+An operational amplifier drives a FET to regulate the load current.
+The positive input of the amplifier is set by the user with a pot. The
+amplifier negative input is set to the voltage across a sensing resistor.
+More information can be found on the project page:
+[ TODO: link ]
+Also, the following link explains the FET driving amplifier stage:
+http://www.daycounter.com/Circuits/Current-Servo/Current-Servo.phtml
+
+While the reload2 is a great product, it has 2 limitations for our
+tests:
+. the load current is set by hand,
+. the minimum load current is too high.
+
+
+[ Making the load programmable ]
+
+While setting the current by hand is fine simple tests, it does not allow
+to test more complex cases. For instance, current ramping up or down when
+the electronic board is booting or some components go to sleep. Thus, I
+wanted a load that is programmable.
+
+I had a couple of TEENSY3.1 also bought from hackaday:
+https://www.pjrc.com/teensy/teensy31.html
+http://store.hackaday.com/products/teensy-3-1
+
+[ TODO: explain TEENSY3.1 ]
+
+In its last version, DAC 12 bits ...
+Internal 1.7 voltage regulator ...
+
+[ TODO: code ]
+
+
+[ Reducing minimum load current ]
+
+The MCP6002 amplifier is used to drive the FET:
+http://www.microchip.com/wwwproducts/Devices.aspx?product=MCP6002
+http://fr.farnell.com/microchip/mcp6002-e-sn/ampli-op-double-1mhz-cms/dp/1332118
+
+It is a low cost (0.4 euros), single supply, rail to rail amplifier. The
+datasheet states the maximum voltage offset is 4.5mV. It means that even
+if a 0V difference is present between the 2 inputs, the amplifier output
+can be as high as 4.5mV. Thus, the lowest possible load current is:
+0.0045 / 0.05 = 90mA
+
+In practice, I observed a 200mA current. This is too high for our tests,
+as we want to validate our power supply with currents as low as a 10mA.
+
+The best solution I found was to use a chopper amplifier.n
+Chopper amplifiers contains additional circuitry that lower the offset
+voltage. Also, it corrects offset voltage drifts due to temperature.
+For these reason, they are also known as zero drift amplifier.
+
+When looking for an actual component, I found the AD8552:
+http://www.analog.com/media/en/technical-documentation/data-sheets/AD8551_8552_8554.pdf
+
+Its voltage offset is 1uV, with a 0.005uV/C input offset drift. It is
+rail to rail and operates in the same voltage range than the MCP6002.
+More importantly, it has the exact same footprint as the MCP6002. Thus,
+it can be used as a drop in replacement.
+
+Note that it is much more expensive, 4.25 euros. I guess it can be
+sampled for free.
+
+Once a component was chosen, the hard part was to remove the soldered
+amplifier without damaging the PCB. I destroyed a pad by over heating,
+but the mistake was easily solved:
+[ TODO: picture ]
+
+After soldering the new amplifier, the lowest load current dropped to
+6mA, which is less than what we want.
+[ TODO: picture ]
+
+
+[ TODO: submit on embeddedrelated ]
+[ TODO: contact hackaday ]
+[ TODO: contact reload:2 author ]
