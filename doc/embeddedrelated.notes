@@ -1,16 +1,15 @@
-[ TITLE: hacking the reload:2 active load ]
+[ TITLE: hacking the reload2 active load ]
 
 
 [ Introduction ]
 
 With another colleague, we are currently developping an electronic
-board at work that will eventually be powered over ethernet. to gain
+board at work that will eventually be powered over ethernet. To gain
 more experience with this technology, we made a power supply stage.
 [ TODO: schematics ]
 
-We want to test this stage with different load profiles to simulate
-the final board under different circumstances. I remembered seeing
-the reload2, a low cost active load sold on hackaday:
+We want to test this stage with different load profiles. I had previously
+read about the reload2, a low cost active load sold on hackaday:
 http://www.arachnidlabs.com/reload-2/index.html
 http://store.hackaday.com/products/re-load-2
 
