@@ -1,3 +1,11 @@
+[ purpose ]
+
+create a low cost programmable load to test power over ethernet
+play simple current profiles: ramps, sleep mode ...
+100mA resolution ok
+up to 3A
+
+
 [ driving with the teensy dac ]
 
 RELOAD2 schematics are found here:
@@ -39,8 +47,23 @@ Also, we want the maximum current not to exceed 3 A:
 3 = Vdac / 0.05
 Vdac = 3 * 0.05 = 0.15 V (512)
 
+With the original RELOAD2 voltage divider, the maximum
+voltage is 0.174 V
+
+
+[ security ]
+
+we want the maximum voltage not to exceed 0.15 V.
+once the DAC is configured, we can ensure this by software.
+
+
 [ references ]
 
 https://www.pjrc.com/teensy/teensy31.html
 http://www.arachnidlabs.com/reload-2/index.html
 http://www.arachnidlabs.com/reload-2/instructions.html
+
+
+[ todo ]
+
+feedback from the sense

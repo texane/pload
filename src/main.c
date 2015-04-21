@@ -29,7 +29,9 @@ static uint32_t ma_to_dac(uint32_t ma)
   /* thus */
   /* dac_value = (ma * 4096) / (DAC_VREF_MV * 20) */
 
-  return (ma * 4096) / (DAC_VREF_MV * 20);
+  /* also, a factor of 8 because of voltage divider */
+
+  return (ma * 4096 * 8) / (DAC_VREF_MV * 20);
 }
 
 int main(void)
@@ -48,17 +50,13 @@ int main(void)
   {
     SERIAL_WRITE_STRING("0\r\n");
     dac_set(ma_to_dac(0));
-    delay(5000);
+    delay(1000);
 
     SERIAL_WRITE_STRING("10\r\n");
-    serial_write(uint32_to_string(ma_to_dac(10)), 8);
-    SERIAL_WRITE_STRING("\r\n");
     dac_set(ma_to_dac(10));
     delay(5000);
 
     SERIAL_WRITE_STRING("50\r\n");
-    serial_write(uint32_to_string(ma_to_dac(50)), 8);
-    SERIAL_WRITE_STRING("\r\n");
     dac_set(ma_to_dac(50));
     delay(5000);
 
