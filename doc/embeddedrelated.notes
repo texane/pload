@@ -3,9 +3,9 @@
 
 [ Introduction ]
 
-With another colleague, we are currently developping an electronic
-board at work that will eventually be powered over ethernet. To gain
-more experience with this technology, we made a power supply stage.
+With another colleague at work, we are currently developping an electronic
+board that will eventually be powered over ethernet. To gain more experience
+with this technology, we made a standalone power supply stage.
 [ TODO: schematics ]
 
 We want to test this stage with different load profiles. I had previously
@@ -13,22 +13,31 @@ read about the reload2, a low cost active load sold on hackaday:
 http://www.arachnidlabs.com/reload-2/index.html
 http://store.hackaday.com/products/re-load-2
 
-Everything is provided, including heatsink and connectors. For 20$,
-this is very attractive so it was the occasion for me to give it a try.
+It operates over a large range of voltage, and can handle up to 12W. Everything
+is provided, including heatsink and connectors. For 20$, this is very attractive
+so it was the occasion for me to give it a try.
+
+It is an open hardware project whose information can be found on the project web
+pages and repository:
+http://www.arachnidlabs.com/reload-2/index.html
+http://www.arachnidlabs.com/reload-2/instructions.html
+https://github.com/arachnidlabs/reload
 
 The schematics are simple:
 [ TODO: schematics ]
 
-An operational amplifier drives a FET to regulate the load current.
-The positive input of the amplifier is set by the user with a pot. The
-amplifier negative input is set to the voltage across a sensing resistor.
-More information can be found on the project page:
-[ TODO: link ]
-Also, the following link explains the FET driving amplifier stage:
+An operational amplifier drives a FET to regulate the load current. The positive
+input of the amplifier is set by the user with a pot, the low part of a voltage
+divider. The amplifier negative input is set to the voltage across a current
+sensing resistor of 0.05 Ohms. When regulated, the following relation exists:
+u_in- = u_in+ = u_sense = r_sense * i_load
+i_load = u_in+ / r_sense
+i_load = u_in+ / 0.05 = u_in+ * 20
+
+The following link explains the FET driving amplifier stage:
 http://www.daycounter.com/Circuits/Current-Servo/Current-Servo.phtml
 
-While the reload2 is a great product, it has 2 limitations for our
-tests:
+While the reload2 is a great product, it has 2 limitations for our tests:
 . the load current is set by hand,
 . the minimum load current is too high.
 
