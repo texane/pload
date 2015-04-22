@@ -68,7 +68,7 @@ solution is to divide the DAC output using a resistor divider:
 . it is safer as regard with eventual software mistakes.
 
 It results in the following new circuit:
-[ TODO: new_schematics.png ]
+[ TODO: dia/new_circuit/main.jpeg ]
 
 I created a repository for the project materials:
 https://github.com/texane/pload
