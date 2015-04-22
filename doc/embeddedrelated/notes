@@ -5,11 +5,12 @@
 
 With another colleague at work, we are currently developping an electronic
 board that will eventually be powered over ethernet. To gain more experience
-with this technology, we made a standalone power supply stage.
-[ TODO: schematics ]
+with this technology, we prototyped a standalone power supply stage.
+[ TODO: dia/elec_power/main.jpeg ]
 
-We want to test this stage with different load profiles. I had previously
-read about the reload2, a low cost active load sold on hackaday:
+We want to test this stage with different load profiles. While we already have
+high quality active loads at work, I had previously read about the reload2 from
+arachnidlabs, a low cost active load sold on hackaday:
 http://www.arachnidlabs.com/reload-2/index.html
 http://store.hackaday.com/products/re-load-2
 
@@ -23,8 +24,8 @@ http://www.arachnidlabs.com/reload-2/index.html
 http://www.arachnidlabs.com/reload-2/instructions.html
 https://github.com/arachnidlabs/reload
 
-The schematics are simple:
-[ TODO: schematics ]
+The circuit is quite simple:
+[ TODO: pic/reload-schematic.png ]
 
 An operational amplifier drives a FET to regulate the load current. The positive
 input of the amplifier is set by the user with a pot, the low part of a voltage
@@ -44,31 +45,43 @@ While the reload2 is a great product, it has 2 limitations for our tests:
 
 [ Making the load programmable ]
 
-While setting the current by hand is fine simple tests, it does not allow
-to test more complex cases. For instance, current ramping up or down when
-the electronic board is booting or some components go to sleep. Thus, I
-wanted a load that is programmable.
+While setting the current by hand is fine for simple tests, it does not allow
+to try more complex cases. For instance, current ramping up or down when the
+electronic board is booting or some components go to sleep. Thus, we need a
+load that is programmable. To do so, we can replace the manually controlled
+voltage divider by a DAC driven by a microcontroller.
 
-I had a couple of TEENSY3.1 also bought from hackaday:
+For this purpose, I have a couple of TEENSY3.1, also bought from hackaday:
 https://www.pjrc.com/teensy/teensy31.html
 http://store.hackaday.com/products/teensy-3-1
 
-[ TODO: explain TEENSY3.1 ]
+The TEENSY3.1 is a great board relying on a Freescale MK20 ARM Cortex M4
+microcontroller. In its last version, the TEENSY3.1 provides a 12 bits DAC
+that is able to drive the RELOAD2 operational amplifier. Also, it integrates
+an internal 1.2V voltage reference that can be used as the DAC voltage
+reference.
 
-In its last version, DAC 12 bits ...
-Internal 1.7 voltage regulator ...
+Note that we want to limit the load current to 3A, which means a DAC output
+voltage of 150mV. While we can limit it in software, a more interesting
+solution is to divide the DAC output using a resistor divider:
+. it allows to use the full DAC range (0 to 1.2V at 12 bits),
+. it is safer as regard with eventual software mistakes.
 
-[ TODO: code ]
+[ TODO: schematics ]
+
+I created a repository for the project materials:
+https://github.com/texane/pload
+https://github.com/texane/teensy3 (reused software components)
 
 
 [ Reducing minimum load current ]
 
-The MCP6002 amplifier is used to drive the FET:
+The reload2 uses a MCP6002 amplifier to drive the FET:
 http://www.microchip.com/wwwproducts/Devices.aspx?product=MCP6002
 http://fr.farnell.com/microchip/mcp6002-e-sn/ampli-op-double-1mhz-cms/dp/1332118
 
 It is a low cost (0.4 euros), single supply, rail to rail amplifier. The
-datasheet states the maximum voltage offset is 4.5mV. It means that even
+datasheet states the maximum offset voltage is 4.5mV. It means that even
 if a 0V difference is present between the 2 inputs, the amplifier output
 can be as high as 4.5mV. Thus, the lowest possible load current is:
 0.0045 / 0.05 = 90mA
@@ -76,32 +89,47 @@ can be as high as 4.5mV. Thus, the lowest possible load current is:
 In practice, I observed a 200mA current. This is too high for our tests,
 as we want to validate our power supply with currents as low as a 10mA.
 
-The best solution I found was to use a chopper amplifier.n
-Chopper amplifiers contains additional circuitry that lower the offset
-voltage. Also, it corrects offset voltage drifts due to temperature.
-For these reason, they are also known as zero drift amplifier.
+The solution I ended up with is to use a chopper amplifier. Chopper
+amplifiers contains additional circuitry that lower the offset voltage.
+Also, it corrects offset voltage drifts due to temperature. For this
+reason, they are also known as zero drift amplifiers:
+http://electronicdesign.com/analog/chopper-stabilized-op-amps
 
 When looking for an actual component, I found the AD8552:
 http://www.analog.com/media/en/technical-documentation/data-sheets/AD8551_8552_8554.pdf
+http://fr.farnell.com/analog-devices/ad8552arz/ampli-op-double-z-drift-e-s-r/dp/9425845
 
-Its voltage offset is 1uV, with a 0.005uV/C input offset drift. It is
+Its offset voltage is 1uV, with a 0.005uV/C input offset drift. It is
 rail to rail and operates in the same voltage range than the MCP6002.
-More importantly, it has the exact same footprint as the MCP6002. Thus,
-it can be used as a drop in replacement.
+It has the exact same footprint as the MCP6002. Thus, it can be used
+as a drop in replacement. Note that it is much more expensive, 4.25
+euros. I guess it can be sampled for free.
 
-Note that it is much more expensive, 4.25 euros. I guess it can be
-sampled for free.
-
-Once a component was chosen, the hard part was to remove the soldered
+Once the component was chosen, the hard part was to remove the soldered
 amplifier without damaging the PCB. I destroyed a pad by over heating,
-but the mistake was easily solved:
-[ TODO: picture ]
+but the mistake could still be fixed:
+[ TODO: final PCB picture ]
+[ TODO: mounted on prototyping board ]
 
-After soldering the new amplifier, the lowest load current dropped to
-6mA, which is less than what we want.
-[ TODO: picture ]
+With the new amplifier, the lowest load current dropped to 6mA, which
+fits our requirements.
+
+
+[ Conclusion ]
+
+While it does the job quite well, it is more of a hack than a serious
+lab instrument. Plus, I always find it interesting to repurpose stuffs,
+as it cultivates a knowledge different from when you start from scratch.
+
+If you have money to spend, an alternative may be the more expensive
+RELOAD PRO, also from arachnidlabs and sold on hackaday:
+http://www.arachnidlabs.com/reload-pro/
+http://store.hackaday.com/products/re-load-pro
+
+I would be very interested to have different feedbacks on this product !
 
 
 [ TODO: submit on embeddedrelated ]
 [ TODO: contact hackaday ]
 [ TODO: contact reload:2 author ]
+[ TODO: jprc forum ]
