@@ -67,7 +67,8 @@ solution is to divide the DAC output using a resistor divider:
 . it allows to use the full DAC range (0 to 1.2V at 12 bits),
 . it is safer as regard with eventual software mistakes.
 
-[ TODO: schematics ]
+It results in the following new circuit:
+[ TODO: new_schematics.png ]
 
 I created a repository for the project materials:
 https://github.com/texane/pload
@@ -107,13 +108,20 @@ euros. I guess it can be sampled for free.
 
 Once the component was chosen, the hard part was to remove the soldered
 amplifier without damaging the PCB, as I did not have a hot air gun when
-doing it at home. I destroyed a pad by over heating, but the mistake could
+doing it at home. I destroyed a pad due to overheat, but the mistake could
 still be fixed:
-[ TODO: final PCB picture ]
-[ TODO: mounted on prototyping board ]
+[ TODO: pic/scaled_SAM_2243.JPG ]
 
-With the new amplifier, the lowest load current dropped to 6mA, which
-fits our requirements.
+With the new amplifier and fix:
+[ TODO: pic/scaled_SAM_2247.JPG ]
+
+The final assembly with TEENSY3.1 added:
+[ TODO: pic/scaled_SAM_2251.JPG ]
+[ TODO: pic/scaled_SAM_2253.JPG ]
+
+On this picture, we see the module in use with the lowest possible current.
+Due to the chopper amplifier, it dropped to 7mA, which fits our requirements:
+[ TODO: pic/scaled_SAM_2255.JPG ]
 
 
 [ Conclusion ]
