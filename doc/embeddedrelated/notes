@@ -106,8 +106,9 @@ as a drop in replacement. Note that it is much more expensive, 4.25
 euros. I guess it can be sampled for free.
 
 Once the component was chosen, the hard part was to remove the soldered
-amplifier without damaging the PCB. I destroyed a pad by over heating,
-but the mistake could still be fixed:
+amplifier without damaging the PCB, as I did not have a hot air gun when
+doing it at home. I destroyed a pad by over heating, but the mistake could
+still be fixed:
 [ TODO: final PCB picture ]
 [ TODO: mounted on prototyping board ]
 
