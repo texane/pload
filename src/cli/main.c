@@ -31,7 +31,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include "serial.h"
-#include "../common/pload_msg.h"
+#include "../common/pload_common.h"
 
 
 #define CONFIG_DEBUG 1

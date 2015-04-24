@@ -1,5 +1,5 @@
-#ifndef COMMON_PLOAD_MSG_H_INCLUDED
-#define COMMON_PLOAD_MSG_H_INCLUDED
+#ifndef PLOAD_COMMON_H_INCLUDED
+#define PLOAD_COMMON_H_INCLUDED
 
 
 #include <stdint.h>
@@ -48,4 +48,4 @@ typedef struct pload_msg
 } __attribute__((packed)) pload_msg_t;
 
 
-#endif /* COMMON_PLOAD_MSG_H_INCLUDED */
+#endif /* PLOAD_COMMON_H_INCLUDED */
