@@ -9,26 +9,27 @@
 
 /* usage */
 /* ./a.out */
-/*  -const i us */
-/*  -ramp i us */
+/*  -const i ms */
+/*  -ramp i ms */
 /*  -repeat n */
 
-/* example: generate 20mA during 100us and ramp to 250mA. The */
-/* ramp duration is 200us. Stay at 250mA for 1ms. repeat 3 times */
-/* ./a.out -const 20 100 -ramp 250 200 -const 250 1000 -repeat 3 */
+/* example: generate 20mA during 100ms and ramp to 250mA. The */
+/* ramp duration is 200ms. Stay at 250mA for 10ms. repeat 3 times */
+/* ./a.out -const 20 100 -ramp 250 200 -const 250 10 -repeat 3 */
 
-/* example: generate 100mA during 100us and ramp to 50mA. Stay */
-/* at 50mA for 200us. Ramp duration is 40us. Repeat forever. */
+/* example: generate 100mA during 100ms and ramp to 50mA. Stay */
+/* at 50mA for 200ms. Ramp duration is 40ms. Repeat forever. */
 /* ./a.out -const 100 100 -ramp 50 40 -const 50 200 -repeat -1 */
 
 /* example: continuously generate 100mA for 10ms then 200mA for */
 /* 20ms. */
-/* ./a.out -const 100 10000 -const 200 20000 -repeat -1 */
+/* ./a.out -const 100 10 -const 200 20 -repeat -1 */
 
 
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
 #include <sys/types.h>
 #include "serial.h"
 #include "../common/pload_common.h"
@@ -53,22 +54,35 @@ typedef struct
   const char* dev_path;
 
   unsigned int step_op[PLOAD_STEP_COUNT];
-  unsigned int step_arg0[PLOAD_STEP_COUNT];
-  unsigned int step_arg1[PLOAD_STEP_COUNT];
+  int step_arg0[PLOAD_STEP_COUNT];
+  int step_arg1[PLOAD_STEP_COUNT];
   size_t step_count;
 
 } cmdline_info_t;
 
+static unsigned int ms_to_ticks(unsigned int ms)
+{
+  /* (ms / 1000) = x / fclock */
+  /* x = ms * flock / 1000 */
+
+  return (unsigned int)ceil((double)(ms * (PLOAD_CLOCK_FREQ / 1000)));
+}
+
 static int parse_cmdline(cmdline_info_t* info, const char** av)
 {
+  unsigned int i = 0;
+  unsigned int ii;
+  int x;
+  int di;
+
   info->dev_path = "/dev/ttyACM0";
   info->step_count = 0;
 
-  for (; *av != NULL; ++*av)
+  for (; *av != NULL; ++av)
   {
     if (strcmp(*av, "-dev") == 0)
     {
-      if ((++*av) == NULL)
+      if (*(++av) == NULL)
       {
 	PERROR();
 	return -1;
@@ -89,53 +103,104 @@ static int parse_cmdline(cmdline_info_t* info, const char** av)
     {
       info->step_op[info->step_count] = PLOAD_STEP_OP_CONST;
 
-      if ((++*av) == NULL)
+      if (*(++av) == NULL)
       {
 	PERROR();
 	return -1;
       }
 
-      info->step_arg0[info->step_count] = (unsigned int)atoi(*av);
+      /* current */
+      i = atoi(*av);
+      if (i > PLOAD_MAX_CURRENT)
+      {
+	PERROR();
+	return -1;
+      }
+      info->step_arg0[info->step_count] = i;
 
-      if ((++*av) == NULL)
+      if (*(++av) == NULL)
       {
 	PERROR();
 	return -1;
       }
 
-      info->step_arg1[info->step_count] = (unsigned int)atoi(*av);
+      /* duration */
+      x = ms_to_ticks(atoi(*av));
+      if (x == 0)
+      {
+	PERROR();
+	return -1;
+      }
+      info->step_arg1[info->step_count] = x;
     }
     else if (strcmp(*av, "-ramp") == 0)
     {
+      /* sequence must start with a -const */
+      if (info->step_count == 0)
+      {
+	PERROR();
+	return -1;
+      }
+
       info->step_op[info->step_count] = PLOAD_STEP_OP_RAMP;
 
-      if ((++*av) == NULL)
+      if (*(++av) == NULL)
       {
 	PERROR();
 	return -1;
       }
 
-      info->step_arg0[info->step_count] = (unsigned int)atoi(*av);
-
-      if ((++*av) == NULL)
+      /* current */
+      ii = atoi(*av);
+      if (ii > PLOAD_MAX_CURRENT)
       {
 	PERROR();
 	return -1;
       }
 
-      info->step_arg1[info->step_count] = (unsigned int)atoi(*av);
+      if (*(++av) == NULL)
+      {
+	PERROR();
+	return -1;
+      }
+
+      /* duration */
+      x = ms_to_ticks(atoi(*av));
+      if (x == 0)
+      {
+	PERROR();
+	return -1;
+      }
+      info->step_arg1[info->step_count] = x;
+
+      /* compute di */
+
+      di = (int)ceil(abs(ii - i) / (int)x);
+      if (di == 0)
+      {
+	PERROR();
+	return -1;
+      }
+
+      if (ii < i) di *= -1;
+
+      info->step_arg0[info->step_count] = di;
+
+      /* new current, which may not be precisely ii */
+
+      i = i + di * (int)x;
     }
     else if (strcmp(*av, "-repeat") == 0)
     {
       info->step_op[info->step_count] = PLOAD_STEP_OP_REPEAT;
 
-      if ((++*av) == NULL)
+      if (*(++av) == NULL)
       {
 	PERROR();
 	return -1;
       }
 
-      info->step_arg0[info->step_count] = (unsigned int)atoi(*av);
+      info->step_arg0[info->step_count] = atoi(*av);
     }
     else
     {
@@ -160,14 +225,12 @@ typedef struct pload_handle
 
 static int pload_sync(pload_handle_t* pload)
 {
-  static const uint8_t sync_byte = PLOAD_SYNC_BYTE;
-  static const uint8_t end_byte = PLOAD_SYNC_END;
+  static const uint8_t sync_byte = PLOAD_MSG_OP_SYNC;
 
   size_t i;
 
   for (i = 0; i < (4 * sizeof(pload_msg_t)); ++i)
   {
-    usleep(100);
     if (serial_writen(&pload->serial, &sync_byte, 1))
     {
       PERROR();
@@ -179,12 +242,6 @@ static int pload_sync(pload_handle_t* pload)
   usleep(10000);
 
   if (serial_flush_txrx(&pload->serial))
-  {
-    PERROR();
-    return -1;
-  }
-
-  if (serial_writen(&pload->serial, &end_byte, 1))
   {
     PERROR();
     return -1;
@@ -243,7 +300,7 @@ static int pload_write_msg
 
 /* main */
 
-static inline uint32_t uint32_to_le(uint32_t x)
+static inline int32_t int32_to_le(int32_t x)
 {
   return x;
 }
@@ -268,13 +325,25 @@ int main(int ac, char** av)
     goto on_error_0;
   }
 
+  /* convert command line to steps */
+
   msg.op = PLOAD_MSG_OP_SET_STEPS;
   msg.u.steps.count = (uint8_t)info.step_count;
   for (i = 0; i != info.step_count; ++i)
   {
+#if 0
+    printf
+    (
+     "%s %d %d\n",
+     (info.step_op[i] == PLOAD_STEP_OP_CONST) ? "const" : "ramp",
+     info.step_arg0[i],
+     info.step_arg1[i]
+    );
+#endif
+
     msg.u.steps.op[i] = (uint8_t)info.step_op[i];
-    msg.u.steps.arg0[i] = uint32_to_le((uint32_t)info.step_arg0[i]);
-    msg.u.steps.arg1[i] = uint32_to_le((uint32_t)info.step_arg1[i]);
+    msg.u.steps.arg0[i] = int32_to_le((int32_t)info.step_arg0[i]);
+    msg.u.steps.arg1[i] = int32_to_le((int32_t)info.step_arg1[i]);
   }
 
   if (pload_write_msg(&pload, &msg))

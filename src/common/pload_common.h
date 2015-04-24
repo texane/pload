@@ -6,9 +6,7 @@
 
 
 #define PLOAD_MSG_OP_SET_STEPS 0x00
-
-#define PLOAD_SYNC_BYTE 0xa5
-#define PLOAD_SYNC_END 0x5a
+#define PLOAD_MSG_OP_SYNC 0xa5
 
 /* set_steps ops */
 #define PLOAD_STEP_OP_CONST 0x00
@@ -16,11 +14,15 @@
 #define PLOAD_STEP_OP_REPEAT 0x02
 
 /* generator main clock frequency */
-#define PLOAD_FCLOCK 1000000
+#define PLOAD_CLOCK_FREQ 1000
+
+/* maximum load current, in mA */
+#define PLOAD_MAX_CURRENT 1500
 
 
 typedef struct pload_msg
 {
+  /* note: little endian format */
   /* warning: everything must be packed attribtued */
 
   uint8_t op;
@@ -34,16 +36,13 @@ typedef struct pload_msg
       /* current intensity values, in mA */
 #define PLOAD_STEP_COUNT 32
       uint8_t op[PLOAD_STEP_COUNT];
-      uint32_t arg0[PLOAD_STEP_COUNT];
-      uint32_t arg1[PLOAD_STEP_COUNT];
+      int32_t arg0[PLOAD_STEP_COUNT];
+      int32_t arg1[PLOAD_STEP_COUNT];
       uint8_t count;
 
     } __attribute__((packed)) steps;
 
   } __attribute__((packed)) u;
-
-  /* 0xff if synchronization wanted */
-  uint8_t sync;
 
 } __attribute__((packed)) pload_msg_t;
 
