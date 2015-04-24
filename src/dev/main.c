@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include "mk20dx128.h"
 #include "serial.c"
+#include "pit.c"
+#include "../common/pload_common.h"
 
 /* use internal 1.2V vref */
 #define DAC_USE_VREF
@@ -14,12 +16,10 @@
 extern void delay(uint32_t);
 
 
-/* main */
+/* ma the milliamps conversion */
 
 static uint32_t ma_to_dac(uint32_t ma)
 {
-  /* ma the milliamps */
-
   /* do the full computation here to avoid truncatures */
 
   /* we have */
@@ -34,8 +34,93 @@ static uint32_t ma_to_dac(uint32_t ma)
   return (ma * 4096 * 8) / (DAC_VREF_MV * 20);
 }
 
+
+/* pit interrupt handler */
+
+static volatile uint32_t pit_flags = 0;
+static volatile pload_msg_t msg;
+static volatile uint32_t step_index = 0;
+static volatile uint32_t tick_count = 0;
+static volatile uint32_t repeat_index = 0;
+static volatile int32_t current_val = 0;
+
+void pit1_isr(void)
+{
+  if (--tick_count)
+  {
+    /* continue current step */
+
+    if (msg.u.steps.op[step_index] == PLOAD_STEP_OP_RAMP)
+    {
+      current_val += msg.u.steps.arg0[step_index];
+      dac_set(ma_to_dac((uint32_t)current_val));
+    }
+
+    goto on_done;
+  }
+
+  if ((++step_index) == (uint32_t)msg.u.steps.count)
+  {
+    pit_stop(1);
+    goto on_done;
+  }
+
+  /* current step done, load next state */
+
+  switch (msg.u.steps.op[step_index])
+  {
+  case PLOAD_STEP_OP_CONST:
+    {
+    const_case:
+      current_val = (int32_t)msg.u.steps.arg0[step_index];
+      dac_set(ma_to_dac((uint32_t)current_val));
+      tick_count = (uint32_t)msg.u.steps.arg1[step_index];
+      break ;
+    }
+
+  case PLOAD_STEP_OP_RAMP:
+    {
+      current_val += (int32_t)msg.u.steps.arg0[step_index];
+      dac_set(ma_to_dac((uint32_t)current_val));
+      tick_count = (uint32_t)msg.u.steps.arg1[step_index];
+      break ;
+    }
+
+  case PLOAD_STEP_OP_REPEAT:
+    {
+      const int32_t repeat_count = msg.u.steps.arg0[step_index];
+
+      if ((++repeat_index) == (uint32_t)repeat_count)
+      {
+	pit_stop(1);
+      }
+
+      if (repeat_count == -1)
+      {
+	repeat_index = 0;
+      }
+
+      /* next step */
+      step_index = 0;
+      goto const_case;
+      break ;
+    }
+
+  default: break ;
+  }
+
+ on_done:
+  pit_clear_int(1);
+}
+
+
+/* main */
+
 int main(void)
 {
+  uint32_t msize;
+  uint32_t rsize;
+
 #ifdef DAC_USE_VREF
   vref_setup();
 #endif /* DAC_USE_VREF */
@@ -44,41 +129,49 @@ int main(void)
   dac_enable();
 
   serial_setup();
-  SERIAL_WRITE_STRING("starting\r\n");
+
+  msize = 0;
 
   while (1)
   {
-    SERIAL_WRITE_STRING("0\r\n");
-    dac_set(ma_to_dac(0));
-    delay(1000);
+    rsize = serial_get_rsize();
+    if (rsize > (sizeof(msg) - msize)) rsize = sizeof(msg) - msize;
+    if (rsize == 0) continue ;
 
-    SERIAL_WRITE_STRING("10\r\n");
-    dac_set(ma_to_dac(10));
-    delay(5000);
+    /* stop the generator if active */
 
-    SERIAL_WRITE_STRING("50\r\n");
-    dac_set(ma_to_dac(50));
-    delay(5000);
+    if (pit_flags & (1 << 0))
+    {
+      SERIAL_WRITE_STRING("stopping\r\n");
+      pit_flags &= ~(1 << 0);
+      pit_stop(1);
+    }
 
-    SERIAL_WRITE_STRING("100\r\n");
-    dac_set(ma_to_dac(100));
-    delay(5000);
+    serial_read((uint8_t*)&msg + msize, rsize);
+    msize += rsize;
+    if (msize != sizeof(msg)) continue ;
 
-    SERIAL_WRITE_STRING("200\r\n");
-    dac_set(ma_to_dac(200));
-    delay(5000);
+    /* new message */
+    msize = 0;
 
-    SERIAL_WRITE_STRING("500\r\n");
-    dac_set(ma_to_dac(500));
-    delay(5000);
+    if (msg.op != PLOAD_MSG_OP_SET_STEPS) continue ;
 
-    SERIAL_WRITE_STRING("750\r\n");
-    dac_set(ma_to_dac(750));
-    delay(5000);
+    /* start the generator */
 
-    SERIAL_WRITE_STRING("1000\r\n");
-    dac_set(ma_to_dac(1000));
-    delay(5000);
+    if ((pit_flags & (1 << 0)) == 0)
+    {
+      SERIAL_WRITE_STRING("starting\r\n");
+
+      step_index = 0;
+      tick_count = (uint32_t)msg.u.steps.arg1[0];
+      repeat_index = 0;
+      current_val = (int32_t)msg.u.steps.arg0[0];
+
+      dac_set(ma_to_dac((uint32_t)current_val));
+
+      pit_flags |= 1 << 0;
+      pit_start(1, F_BUS / PLOAD_CLOCK_FREQ);
+    }
   }
 
   return 0;

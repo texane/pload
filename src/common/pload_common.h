@@ -25,7 +25,7 @@ typedef struct pload_msg
   /* note: little endian format */
   /* warning: everything must be packed attribtued */
 
-  uint8_t op;
+  uint32_t op;
 
   union
   {
@@ -39,7 +39,6 @@ typedef struct pload_msg
       int32_t arg0[PLOAD_STEP_COUNT];
       int32_t arg1[PLOAD_STEP_COUNT];
       uint8_t count;
-
     } __attribute__((packed)) steps;
 
   } __attribute__((packed)) u;
