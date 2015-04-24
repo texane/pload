@@ -5,12 +5,18 @@
 #include <stdint.h>
 
 
-#define PLOAD_OP_GET_INFO 0x00
-#define PLOAD_OP_SET_CONF 0x01
-
+#define PLOAD_MSG_OP_SET_STEPS 0x00
 
 #define PLOAD_SYNC_BYTE 0xa5
 #define PLOAD_SYNC_END 0x5a
+
+/* set_steps ops */
+#define PLOAD_STEP_OP_CONST 0x00
+#define PLOAD_STEP_OP_RAMP 0x01
+#define PLOAD_STEP_OP_REPEAT 0x02
+
+/* generator main clock frequency */
+#define PLOAD_FCLOCK 1000000
 
 
 typedef struct pload_msg
@@ -23,26 +29,16 @@ typedef struct pload_msg
   {
     struct
     {
-      /* get the device information */
-
-      /* clock frequency, in Hz */
-      uint32_t clock_freq;
-
-    } __attribute__((packed)) info;
-
-    struct
-    {
       /* set the current generator configuration */
 
       /* current intensity values, in mA */
-#define PLOAD_CUR_NVAL 32
-      uint16_t cur_vals[PLOAD_CUR_NVAL];
-      uint8_t cur_nval;
+#define PLOAD_STEP_COUNT 32
+      uint8_t op[PLOAD_STEP_COUNT];
+      uint32_t arg0[PLOAD_STEP_COUNT];
+      uint32_t arg1[PLOAD_STEP_COUNT];
+      uint8_t count;
 
-      /* clock frequency divider */
-      uint32_t clock_fdiv;
-
-    } __attribute__((packed)) conf;
+    } __attribute__((packed)) steps;
 
   } __attribute__((packed)) u;
 
