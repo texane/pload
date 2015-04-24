@@ -54,6 +54,12 @@ void pit1_isr(void)
     {
       current_val += msg.u.steps.arg0[step_index];
       dac_set(ma_to_dac((uint32_t)current_val));
+
+#if 0 /* DEBUG */
+      SERIAL_WRITE_STRING("dac_set:");
+      serial_write(uint32_to_string((uint32_t)current_val), 8);
+      SERIAL_WRITE_STRING("\r\n");
+#endif /* DEBUG */
     }
 
     goto on_done;
@@ -61,6 +67,10 @@ void pit1_isr(void)
 
   if ((++step_index) == (uint32_t)msg.u.steps.count)
   {
+#if 0 /* DEBUG */
+    SERIAL_WRITE_STRING("stopping\r\n");
+#endif /* DEBUG */
+
     pit_stop(1);
     goto on_done;
   }
@@ -74,6 +84,13 @@ void pit1_isr(void)
     const_case:
       current_val = (int32_t)msg.u.steps.arg0[step_index];
       dac_set(ma_to_dac((uint32_t)current_val));
+
+#if 0 /* DEBUG */
+      SERIAL_WRITE_STRING("dac_set:");
+      serial_write(uint32_to_string((uint32_t)current_val), 8);
+      SERIAL_WRITE_STRING("\r\n");
+#endif /* DEBUG */
+
       tick_count = (uint32_t)msg.u.steps.arg1[step_index];
       break ;
     }
@@ -82,6 +99,13 @@ void pit1_isr(void)
     {
       current_val += (int32_t)msg.u.steps.arg0[step_index];
       dac_set(ma_to_dac((uint32_t)current_val));
+
+#if 0 /* DEBUG */
+      SERIAL_WRITE_STRING("dac_set:");
+      serial_write(uint32_to_string((uint32_t)current_val), 8);
+      SERIAL_WRITE_STRING("\r\n");
+#endif /* DEBUG */
+
       tick_count = (uint32_t)msg.u.steps.arg1[step_index];
       break ;
     }
@@ -92,7 +116,12 @@ void pit1_isr(void)
 
       if ((++repeat_index) == (uint32_t)repeat_count)
       {
+#if 0 /* DEBUG */
+	SERIAL_WRITE_STRING("stopping\r\n");
+#endif /* DEBUG */
+
 	pit_stop(1);
+	goto on_done;
       }
 
       if (repeat_count == -1)
@@ -142,7 +171,10 @@ int main(void)
 
     if (pit_flags & (1 << 0))
     {
+#if 0 /* DEBUG */
       SERIAL_WRITE_STRING("stopping\r\n");
+#endif /* DEBUG */
+
       pit_flags &= ~(1 << 0);
       pit_stop(1);
     }
@@ -160,7 +192,9 @@ int main(void)
 
     if ((pit_flags & (1 << 0)) == 0)
     {
+#if 0 /* DEBUG */
       SERIAL_WRITE_STRING("starting\r\n");
+#endif /* DEBUG */
 
       step_index = 0;
       tick_count = (uint32_t)msg.u.steps.arg1[0];
@@ -168,6 +202,12 @@ int main(void)
       current_val = (int32_t)msg.u.steps.arg0[0];
 
       dac_set(ma_to_dac((uint32_t)current_val));
+
+#if 0 /* DEBUG */
+      SERIAL_WRITE_STRING("dac_set:");
+      serial_write(uint32_to_string((uint32_t)current_val), 8);
+      SERIAL_WRITE_STRING("\r\n");
+#endif /* DEBUG */
 
       pit_flags |= 1 << 0;
       pit_start(1, F_BUS / PLOAD_CLOCK_FREQ);
