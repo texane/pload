@@ -45,7 +45,8 @@ static uint32_t ma_to_dac(uint32_t ma)
 /* in the message, and tracked by pload_repeat_index. each step */
 /* is active for a tick count, tracked by pload_tick_count. */
 /* as the sequencer executes, it updates the current value with */
-/* the dac. pload_current tracks of the current value. */
+/* the dac. pload_current tracks of the current value. the sequencer */
+/* state is kept in pload_flags. */
 
 #define PLOAD_FLAG_IS_STARTED (1 << 0)
 static volatile uint32_t pload_flags = 0;
