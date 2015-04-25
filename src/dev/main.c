@@ -47,7 +47,9 @@ static uint32_t ma_to_dac(uint32_t ma)
 /* as the sequencer executes, it updates the current value with */
 /* the dac. pload_current tracks of the current value. */
 
+#define PLOAD_FLAG_IS_STARTED (1 << 0)
 static volatile uint32_t pload_flags = 0;
+
 static volatile pload_msg_t pload_msg;
 static volatile uint32_t pload_step_index = 0;
 static volatile uint32_t pload_tick_count = 0;
@@ -179,13 +181,13 @@ int main(void)
 
     /* stop the generator if active */
 
-    if (pload_flags & (1 << 0))
+    if (pload_flags & PLOAD_FLAG_IS_STARTED)
     {
 #if 0 /* DEBUG */
       SERIAL_WRITE_STRING("stopping\r\n");
 #endif /* DEBUG */
 
-      pload_flags &= ~(1 << 0);
+      pload_flags &= ~PLOAD_FLAG_IS_STARTED;
       pit_stop(1);
     }
 
@@ -200,7 +202,7 @@ int main(void)
 
     /* start the generator */
 
-    if ((pload_flags & (1 << 0)) == 0)
+    if ((pload_flags & PLOAD_FLAG_IS_STARTED) == 0)
     {
 #if 0 /* DEBUG */
       SERIAL_WRITE_STRING("starting\r\n");
@@ -219,7 +221,7 @@ int main(void)
       SERIAL_WRITE_STRING("\r\n");
 #endif /* DEBUG */
 
-      pload_flags |= 1 << 0;
+      pload_flags |= PLOAD_FLAG_IS_STARTED;
       pit_start(1, F_BUS / PLOAD_CLOCK_FREQ);
     }
   }
