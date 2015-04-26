@@ -11,15 +11,16 @@
 /* ./a.out */
 /*  -const i ms */
 /*  -ramp i ms */
+/*  -wait ms */
 /*  -repeat n */
 
 /* example: generate 20mA during 100ms and ramp to 250mA. The */
 /* ramp duration is 200ms. Stay at 250mA for 10ms. repeat 3 times */
-/* ./a.out -const 20 100 -ramp 250 200 -const 250 10 -repeat 3 */
+/* ./a.out -const 20 100 -ramp 250 200 -wait 10 -repeat 3 */
 
 /* example: generate 100mA during 100ms and ramp to 50mA. Stay */
 /* at 50mA for 200ms. Ramp duration is 40ms. Repeat forever. */
-/* ./a.out -const 100 100 -ramp 50 40 -const 50 200 -repeat -1 */
+/* ./a.out -const 100 100 -ramp 50 40 -wait 200 -repeat -1 */
 
 /* example: continuously generate 100mA for 10ms then 200mA for */
 /* 20ms. */
@@ -98,6 +99,15 @@ static int parse_cmdline(cmdline_info_t* info, const char** av)
       PERROR();
       return -1;
     }
+    else if (info->step_count == 0)
+    {
+      /* sequence must start with a -const */
+      if (strcmp(*av, "-const"))
+      {
+	PERROR();
+	return -1;
+      }
+    }
 
     if (strcmp(*av, "-const") == 0)
     {
@@ -135,13 +145,6 @@ static int parse_cmdline(cmdline_info_t* info, const char** av)
     }
     else if (strcmp(*av, "-ramp") == 0)
     {
-      /* sequence must start with a -const */
-      if (info->step_count == 0)
-      {
-	PERROR();
-	return -1;
-      }
-
       info->step_op[info->step_count] = PLOAD_STEP_OP_RAMP;
 
       if (*(++av) == NULL)
@@ -189,6 +192,25 @@ static int parse_cmdline(cmdline_info_t* info, const char** av)
       /* new current, which may not be precisely ii */
 
       i = i + di * (int)x;
+    }
+    else if (strcmp(*av, "-wait") == 0)
+    {
+      info->step_op[info->step_count] = PLOAD_STEP_OP_WAIT;
+
+      if (*(++av) == NULL)
+      {
+	PERROR();
+	return -1;
+      }
+
+      /* duration */
+      x = ms_to_ticks(atoi(*av));
+      if (x == 0)
+      {
+	PERROR();
+	return -1;
+      }
+      info->step_arg1[info->step_count] = x;
     }
     else if (strcmp(*av, "-repeat") == 0)
     {

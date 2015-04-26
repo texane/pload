@@ -11,7 +11,8 @@
 /* set_steps ops */
 #define PLOAD_STEP_OP_CONST 0x00
 #define PLOAD_STEP_OP_RAMP 0x01
-#define PLOAD_STEP_OP_REPEAT 0x02
+#define PLOAD_STEP_OP_WAIT 0x02
+#define PLOAD_STEP_OP_REPEAT 0x03
 
 /* generator main clock frequency */
 #define PLOAD_CLOCK_FREQ 1000

@@ -123,6 +123,12 @@ void pit1_isr(void)
       break ;
     }
 
+  case PLOAD_STEP_OP_WAIT:
+    {
+      pload_tick_count = (uint32_t)pload_msg.u.steps.arg1[pload_step_index];
+      break ;
+    }
+
   case PLOAD_STEP_OP_REPEAT:
     {
       const int32_t repeat_count = pload_msg.u.steps.arg0[pload_step_index];
