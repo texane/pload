@@ -16,6 +16,7 @@ https://github.com/arachnidlabs/reload
 
 FET driving amplifier explainations are found here:
 http://www.daycounter.com/Circuits/Current-Servo/Current-Servo.phtml
+http://electronics.stackexchange.com/questions/129609/how-does-this-constant-current-sink-actually-work
 
 Especially:
 Isense = Vdac / Rsense
